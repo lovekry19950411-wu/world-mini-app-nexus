@@ -5,15 +5,17 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import WorldIDAuth from "./pages/WorldIDAuth";
+import Marketplace from "./pages/Marketplace";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/marketplace"} component={Home} /> {/* TODO: Implement marketplace page */}
-      <Route path={"/dashboard"} component={Home} /> {/* TODO: Implement dashboard page */}
-      <Route path={"/404"} component={NotFound} />
+      <Route path="/" component={Home} />
+      <Route path="/auth" component={WorldIDAuth} />
+      <Route path="/marketplace" component={Marketplace} />
+      <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
