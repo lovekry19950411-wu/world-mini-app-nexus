@@ -8,6 +8,9 @@ import Home from "./pages/Home";
 import WorldIDAuth from "./pages/WorldIDAuth";
 import Marketplace from "./pages/Marketplace";
 import TokenSystem from "./pages/TokenSystem";
+import Lottery from "./pages/Lottery";
+import Lending from "./pages/Lending";
+import Dashboard from "./pages/Dashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -15,8 +18,11 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/auth" component={WorldIDAuth} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/tokens" component={TokenSystem} />
+      <Route path="/lottery" component={Lottery} />
+      <Route path="/lending" component={Lending} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
