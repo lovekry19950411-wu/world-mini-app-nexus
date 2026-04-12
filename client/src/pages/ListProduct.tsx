@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Upload, X, Check, AlertCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { trpc } from '@/lib/trpc';
 
 interface ProductFormData {
   title: string;
@@ -30,14 +31,16 @@ export default function ListProduct() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
+  const listProductMutation = trpc.marketplace.listProduct.useMutation();
+
   const CATEGORIES = [
     'Electronics',
     'Fashion',
     'Home & Lifestyle',
     'Collectibles',
-    'Sports & Outdoors',
-    'Books & Media',
-    'Toys & Games',
+    'Art',
+    'Sports',
+    'Books',
     'Other',
   ];
 
@@ -134,22 +137,30 @@ export default function ListProduct() {
     setSubmitStatus('idle');
 
     try {
-      // 模擬提交延遲
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // 調用 tRPC 路由上架商品
+      const result = await listProductMutation.mutateAsync({
+        title: formData.title,
+        description: formData.description,
+        category: formData.category as 'Electronics' | 'Fashion' | 'Home & Lifestyle' | 'Collectibles' | 'Art' | 'Sports' | 'Books' | 'Other',
+        condition: formData.condition.toUpperCase().replace('-', ' ') as 'New' | 'Like New' | 'Good' | 'Fair',
+        price: parseFloat(formData.price),
+        images: formData.previewUrls, // 使用 base64 預覽 URL（實際應用中應上傳到 S3）
+      });
 
-      // 這裡應該調用 tRPC 路由來上傳商品
-      // const result = await trpc.marketplace.listProduct.useMutation({...formData})
+      if (result.success) {
+        console.log('商品上架成功:', result.product);
+        setSubmitStatus('success');
 
-      console.log('商品上架成功:', formData);
-      setSubmitStatus('success');
-
-      // 2 秒後重定向到市場頁面
-      setTimeout(() => {
-        navigate('/marketplace');
-      }, 2000);
+        // 2 秒後重定向到市場頁面
+        setTimeout(() => {
+          navigate('/marketplace');
+        }, 2000);
+      } else {
+        throw new Error(result.error || '上架失敗');
+      }
     } catch (error) {
       console.error('上架失敗:', error);
-      setErrorMessage('上架失敗，請稍後重試');
+      setErrorMessage(error instanceof Error ? error.message : '上架失敗，請稍後重試');
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -331,70 +342,55 @@ export default function ListProduct() {
 
             {/* 圖片預覽 */}
             {formData.previewUrls.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium text-slate-300 mb-4">已上傳圖片</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {formData.previewUrls.map((url, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={url}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-32 object-cover rounded border border-slate-600"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                      >
-                        <X className="w-4 h-4 text-white" />
-                      </button>
-                      {index === 0 && (
-                        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                          主圖
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {formData.previewUrls.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border border-slate-600"
+                    />
+                    {index === 0 && (
+                      <div className="absolute top-1 left-1 bg-purple-600 text-white text-xs px-2 py-1 rounded">
+                        主圖
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
+
+            <div className="text-xs text-slate-400 mt-4">
+              已上傳 {formData.previewUrls.length}/5 張圖片
+            </div>
           </Card>
 
           {/* 提交按鈕 */}
           <div className="flex gap-4">
             <Button
               type="button"
-              onClick={() => navigate('/marketplace')}
               variant="outline"
-              className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
-              disabled={isSubmitting}
+              onClick={() => navigate('/marketplace')}
+              className="flex-1"
             >
               取消
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg py-6"
               disabled={isSubmitting}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
             >
               {isSubmitting ? '上架中...' : '確認上架'}
             </Button>
           </div>
         </form>
-
-        {/* 提示信息 */}
-        <Card className="bg-blue-500/10 border-blue-500/30 p-6 mt-8">
-          <div className="space-y-2 text-sm text-blue-300">
-            <p>
-              <span className="font-semibold">💡 提示：</span>
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>請提供清晰的商品圖片，第一張圖片將作為主圖展示</li>
-              <li>詳細的商品描述有助於提高成交率</li>
-              <li>價格建議參考市場行情，設置合理的價格</li>
-              <li>上架後可在「我的商品」中管理或下架</li>
-            </ul>
-          </div>
-        </Card>
       </div>
     </div>
   );
