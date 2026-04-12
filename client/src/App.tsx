@@ -11,6 +11,7 @@ import TokenSystem from "./pages/TokenSystem";
 import Lottery from "./pages/Lottery";
 import Lending from "./pages/Lending";
 import Dashboard from "./pages/Dashboard";
+import ListProduct from "./pages/ListProduct";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/auth" component={WorldIDAuth} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/marketplace" component={Marketplace} />
+      <Route path="/list-product" component={ListProduct} />
       <Route path="/tokens" component={TokenSystem} />
       <Route path="/lottery" component={Lottery} />
       <Route path="/lending" component={Lending} />

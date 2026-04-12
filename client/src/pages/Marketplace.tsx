@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, ShoppingCart, Star, Filter } from 'lucide-react';
+import { Search, ShoppingCart, Star, Filter, Plus } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 // 示例商品數據
 const SAMPLE_PRODUCTS = [
@@ -55,6 +56,7 @@ const SAMPLE_PRODUCTS = [
 const CATEGORIES = ['All', 'Electronics', 'Fashion', 'Home & Lifestyle', 'Collectibles'];
 
 export default function Marketplace() {
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [cart, setCart] = useState<number[]>([]);
@@ -77,7 +79,14 @@ export default function Marketplace() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-white">World Nexus Marketplace</h1>
             <div className="flex items-center gap-4">
-              <div className="text-right">
+              <Button
+                onClick={() => navigate('/list-product')}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                上架商品
+              </Button>
+              <div className="text-right hidden md:block">
                 <div className="text-sm text-slate-400">Balance</div>
                 <div className="text-lg font-bold text-white">256.8 WLD</div>
               </div>
