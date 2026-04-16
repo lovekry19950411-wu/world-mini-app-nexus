@@ -12,6 +12,9 @@ import Lottery from "./pages/Lottery";
 import Lending from "./pages/Lending";
 import Dashboard from "./pages/Dashboard";
 import ListProduct from "./pages/ListProduct";
+import Tasks from "./pages/Tasks";
+import Exchange from "./pages/Exchange";
+import Referral from "./pages/Referral";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -25,6 +28,9 @@ function Router() {
       <Route path="/tokens" component={TokenSystem} />
       <Route path="/lottery" component={Lottery} />
       <Route path="/lending" component={Lending} />
+      <Route path="/tasks" component={Tasks} />
+      <Route path="/exchange" component={Exchange} />
+      <Route path="/referral" component={Referral} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

@@ -6,6 +6,10 @@ import { worldIdRouter } from "./routers/worldId";
 import { paymentRouter } from "./routers/payment";
 import { marketplaceRouter } from "./routers/marketplace";
 import { transactionsRouter } from "./routers/transactions";
+import { tasksRouter } from "./routers/tasks";
+import { exchangeRouter } from "./routers/exchange";
+import { referralRouter } from "./routers/referral";
+import { notificationsRouter } from "./routers/notifications";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -24,6 +28,10 @@ export const appRouter = router({
   payment: paymentRouter,
   marketplace: marketplaceRouter,
   transactions: transactionsRouter,
+  tasks: tasksRouter,
+  exchange: exchangeRouter,
+  referral: referralRouter,
+  notifications: notificationsRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({

@@ -194,3 +194,101 @@ export const loans = mysqlTable(
 
 export type Loan = typeof loans.$inferSelect;
 export type InsertLoan = typeof loans.$inferInsert;
+
+/**
+ * 任務表 - 用戶可完成的任務以獲得獎勵
+ */
+export const tasks = mysqlTable(
+  "tasks",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    taskType: mysqlEnum("taskType", ["daily_checkin", "referral", "transaction", "social_share"]).notNull(),
+    status: mysqlEnum("status", ["pending", "completed", "claimed"]).default("pending").notNull(),
+    rewardAmount: decimal("rewardAmount", { precision: 20, scale: 8 }).notNull(),
+    rewardType: mysqlEnum("rewardType", ["nexus", "wld"]).default("nexus").notNull(),
+    metadata: text("metadata"), // JSON object for task-specific data
+    completedAt: timestamp("completedAt"),
+    claimedAt: timestamp("claimedAt"),
+    expiresAt: timestamp("expiresAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("userIdx").on(table.userId),
+    taskTypeIdx: index("taskTypeIdx").on(table.taskType),
+    statusIdx: index("statusIdx").on(table.status),
+  })
+);
+
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = typeof tasks.$inferInsert;
+
+/**
+ * 代幣兌換表 - NEXUS ↔ WLD 兌換記錄
+ */
+export const tokenExchanges = mysqlTable(
+  "tokenExchanges",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    fromToken: mysqlEnum("fromToken", ["nexus", "wld"]).notNull(),
+    toToken: mysqlEnum("toToken", ["nexus", "wld"]).notNull(),
+    fromAmount: decimal("fromAmount", { precision: 20, scale: 8 }).notNull(),
+    toAmount: decimal("toAmount", { precision: 20, scale: 8 }).notNull(),
+    exchangeRate: decimal("exchangeRate", { precision: 20, scale: 8 }).notNull(),
+    status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
+    transactionHash: varchar("transactionHash", { length: 256 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    completedAt: timestamp("completedAt"),
+  },
+  (table) => ({
+    userIdx: index("userIdx").on(table.userId),
+    statusIdx: index("statusIdx").on(table.status),
+  })
+);
+
+export type TokenExchange = typeof tokenExchanges.$inferSelect;
+export type InsertTokenExchange = typeof tokenExchanges.$inferInsert;
+
+/**
+ * 用戶代幣餘額表 - 快速查詢用戶的 NEXUS 和 WLD 餘額
+ */
+export const userTokenBalances = mysqlTable(
+  "userTokenBalances",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().unique(),
+    nexusBalance: decimal("nexusBalance", { precision: 20, scale: 8 }).default("0").notNull(),
+    wldBalance: decimal("wldBalance", { precision: 20, scale: 8 }).default("0").notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("userIdx").on(table.userId),
+  })
+);
+
+export type UserTokenBalance = typeof userTokenBalances.$inferSelect;
+export type InsertUserTokenBalance = typeof userTokenBalances.$inferInsert;
+
+/**
+ * 邀請記錄表 - 追蹤用戶邀請關係
+ */
+export const referrals = mysqlTable(
+  "referrals",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    referrerId: int("referrerId").notNull(),
+    referredUserId: int("referredUserId").notNull(),
+    referralCode: varchar("referralCode", { length: 64 }).unique(),
+    rewardClaimed: int("rewardClaimed").default(0),
+    status: mysqlEnum("status", ["pending", "active", "inactive"]).default("pending").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    referrerIdx: index("referrerIdx").on(table.referrerId),
+    referredIdx: index("referredIdx").on(table.referredUserId),
+  })
+);
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;
