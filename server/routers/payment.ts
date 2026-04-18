@@ -47,7 +47,7 @@ export const paymentRouter = router({
           paymentId,
           amount: input.amount,
           currency: input.currency,
-          description: input.description || 'World Nexus Transaction',
+          description: input.description || 'Nexus Transaction',
           metadata: input.metadata || {},
           timestamp: new Date().toISOString(),
         };

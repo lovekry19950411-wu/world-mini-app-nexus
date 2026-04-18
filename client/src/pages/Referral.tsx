@@ -77,7 +77,7 @@ export default function Referral() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">邀請朋友</h1>
-          <p className="text-purple-200">邀請朋友加入 World Nexus，雙方都能獲得獎勵</p>
+          <p className="text-purple-200">邀請望友加入 Nexus，雙方都能獲得獎勵</p>
         </div>
 
         {/* Stats Cards */}
@@ -149,7 +149,7 @@ export default function Referral() {
                     className="text-purple-300 text-sm"
                     onClick={() => {
                       if (displayCode) {
-                        const text = `使用我的邀請碼 ${displayCode} 加入 World Nexus，雙方都能獲得 NEXUS 獎勵！`;
+                        const text = `使用我的邀請碼 ${displayCode} 加入 Nexus，雙方都能獲得 NEXUS 獎勵！`;
                         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`);
                       }
                     }}
@@ -161,7 +161,7 @@ export default function Referral() {
                     className="text-purple-300 text-sm"
                     onClick={() => {
                       if (displayCode) {
-                        const text = `使用我的邀請碼 ${displayCode} 加入 World Nexus，雙方都能獲得 NEXUS 獎勵！`;
+                        const text = `使用我的邀請碼 ${displayCode} 加入 Nexus，雙方都能獲得 NEXUS 獎勵！`;
                         navigator.clipboard.writeText(text);
                       }
                     }}

@@ -34,7 +34,7 @@ export default function Home() {
               Powered by World ID 4.0
             </Badge>
             <h1 className="text-5xl sm:text-6xl font-bold text-white mb-6 leading-tight">
-              World Nexus
+              Nexus
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">
                 去中心化交易與金融生態
               </span>
@@ -208,7 +208,7 @@ export default function Home() {
       <div className="max-w-4xl mx-auto px-4 py-20 sm:px-6 lg:px-8 text-center">
         <h2 className="text-3xl font-bold text-white mb-6">準備好開始了嗎？</h2>
         <p className="text-slate-300 mb-8 text-lg">
-          加入 World Nexus，體驗去中心化交易的未來。無需複雜的 KYC，只需 World ID 認證即可開始。
+          加入 Nexus，體驗去中心化交易的未來。無需複雜的 KYC，只需 World ID 認證即可開始。
         </p>
 
         {isAuthenticated ? (

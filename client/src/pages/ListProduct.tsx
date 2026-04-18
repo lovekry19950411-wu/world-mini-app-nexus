@@ -179,7 +179,7 @@ export default function ListProduct() {
             ← 返回市場
           </button>
           <h1 className="text-4xl font-bold text-white mb-2">上架商品</h1>
-          <p className="text-slate-400">將您的二手或全新商品上架到 World Nexus 市場</p>
+          <p className="text-slate-400">將您的二手或全新商品上架到 Nexus 市場</p>
         </div>
 
         {/* 成功提示 */}

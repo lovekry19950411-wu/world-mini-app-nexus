@@ -15,7 +15,7 @@ export default function Lottery() {
       <div className="max-w-6xl mx-auto">
         {/* 頂部導航 */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">World Nexus 抽獎系統</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">Nexus 抽獎系統</h1>
           <p className="text-slate-400">每週開獎，贏取豐厚獎金</p>
         </div>
 

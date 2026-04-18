@@ -17,7 +17,7 @@ export default function WorldIDAuth() {
 
   const handleVerify = async () => {
     // 使用唯一的 action 和 signal
-    const action = 'world-nexus-verification';
+    const action = 'nexus-verification';
     const signal = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     await verify(action, signal);

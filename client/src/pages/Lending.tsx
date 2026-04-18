@@ -11,7 +11,7 @@ export default function Lending() {
       <div className="max-w-6xl mx-auto">
         {/* 頂部導航 */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">World Nexus 貸款池</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">Nexus 貸款池</h1>
           <p className="text-slate-400">質押資產、借貸 WLD、賺取利息</p>
         </div>
 
