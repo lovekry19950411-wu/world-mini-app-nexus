@@ -14,9 +14,21 @@ const fetchRpContext = async () => {
   // Fetch a signed rp_context from your backend.
   const response = await fetch("/api/idkit/rp-context", {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 
-  return response.json();
+  if (!response.ok) {
+    throw new Error('Failed to fetch RP context');
+  }
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to fetch RP context');
+  }
+
+  return data.rpContext;
 };
 
 const verifyProof = async (result: any) => {
@@ -48,17 +60,20 @@ export default function WorldIDVerification() {
   const handleOpenVerification = async () => {
     if (!rpContext) {
       setIsLoading(true);
+      setError(null);
       try {
         const context = await fetchRpContext();
         setRpContext(context);
-      } catch (err) {
-        setError("Failed to fetch RP context");
         setIsLoading(false);
-        return;
+        setOpen(true);
+      } catch (err: any) {
+        console.error('Error fetching RP context:', err);
+        setError(err.message || "Failed to fetch RP context");
+        setIsLoading(false);
       }
-      setIsLoading(false);
+    } else {
+      setOpen(true);
     }
-    setOpen(true);
   };
 
   const handleVerifySuccess = (result: any) => {
@@ -136,20 +151,20 @@ export default function WorldIDVerification() {
               </Button>
             ) : (
               <>
-                <Button
-                  onClick={handleOpenVerification}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      準備中...
-                    </>
-                  ) : (
-                    "開始認證"
-                  )}
-                </Button>
+                  <Button
+                    onClick={handleOpenVerification}
+                    disabled={isLoading || !rpContext}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        準備中...
+                      </>
+                    ) : (
+                      "開始認證"
+                    )}
+                  </Button>
 
                 {rpContext && (
                   <IDKitRequestWidget
@@ -162,8 +177,8 @@ export default function WorldIDVerification() {
                     allow_legacy_proofs={true}
                     preset={deviceLegacy()}
                     handleVerify={verifyProof}
-                    onSuccess={handleVerifySuccess}
-                    onError={handleVerifyError}
+                    onSuccess={(result) => handleVerifySuccess(result)}
+                    onError={(error) => handleVerifyError(error)}
                   />
                 )}
               </>
