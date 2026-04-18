@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import WorldIDAuth from "./pages/WorldIDAuth";
+import WorldIDVerification from "./pages/WorldIDVerification";
 import Marketplace from "./pages/Marketplace";
 import TokenSystem from "./pages/TokenSystem";
 import Lottery from "./pages/Lottery";
@@ -22,6 +23,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/auth" component={WorldIDAuth} />
+      <Route path="/verify" component={WorldIDVerification} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/list-product" component={ListProduct} />

@@ -10,6 +10,7 @@ import { tasksRouter } from "./routers/tasks";
 import { exchangeRouter } from "./routers/exchange";
 import { referralRouter } from "./routers/referral";
 import { notificationsRouter } from "./routers/notifications";
+import { idkitRouter } from "./routers/idkit";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -32,6 +33,7 @@ export const appRouter = router({
   exchange: exchangeRouter,
   referral: referralRouter,
   notifications: notificationsRouter,
+  idkit: idkitRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({
