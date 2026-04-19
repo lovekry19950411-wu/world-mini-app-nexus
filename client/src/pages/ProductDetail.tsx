@@ -107,7 +107,7 @@ export default function ProductDetail() {
                 {product.category}
               </span>
               <span className="px-3 py-1 bg-pink-500/30 text-pink-300 rounded-full text-sm border border-pink-500/50">
-                {product.condition === "new" ? "New" : "Used"}
+                {product.condition === "excellent" || product.condition === "good" ? "Used" : "New"}
               </span>
             </div>
 

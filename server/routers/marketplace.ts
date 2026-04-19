@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
-import { getDb } from '../db';
+import { getDb, getProductById, getListedProducts } from '../db';
 
 /**
  * 交易市場路由
@@ -139,19 +139,29 @@ export const marketplaceRouter = router({
   getProduct: publicProcedure
     .input(z.object({ productId: z.number() }))
     .query(async ({ input }) => {
+      const product = await getProductById(input.productId);
+      
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      const imageUrl = product.images
+        ? JSON.parse(product.images)[0]
+        : 'https://via.placeholder.com/500';
+
       return {
-        id: input.productId,
-        title: 'Sample Product',
-        description: 'This is a sample product description',
-        price: 99.99,
-        category: 'Electronics',
-        condition: 'new',
-        image: 'https://via.placeholder.com/500',
-        seller: 'Anonymous Seller',
-        sellerRating: 98,
-        soldCount: 42,
-        createdAt: new Date().toISOString(),
-        status: 'active',
+        id: product.id,
+        title: product.title || 'Untitled Product',
+        description: product.description || '',
+        price: parseFloat(product.price.toString()),
+        category: product.category || 'new',
+        condition: product.condition || 'good',
+        image: imageUrl,
+        seller: 'Seller',
+        sellerRating: 95,
+        soldCount: 0,
+        createdAt: product.createdAt?.toISOString() || new Date().toISOString(),
+        status: product.status || 'listed',
       };
     }),
 

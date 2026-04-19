@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, products, Product } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -87,6 +87,45 @@ export async function getUserByOpenId(openId: string) {
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Get a single product by ID
+ */
+export async function getProductById(productId: number): Promise<Product | undefined> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get product: database not available");
+    return undefined;
+  }
+
+  const result = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, productId))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Get all listed products
+ */
+export async function getListedProducts(limit: number = 20, offset: number = 0): Promise<Product[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get products: database not available");
+    return [];
+  }
+
+  const result = await db
+    .select()
+    .from(products)
+    .where(eq(products.status, "listed"))
+    .limit(limit)
+    .offset(offset);
+
+  return result;
 }
 
 // TODO: add feature queries here as your schema grows.
