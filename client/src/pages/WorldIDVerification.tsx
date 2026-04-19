@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IDKitRequestWidget,
   deviceLegacy,
@@ -11,92 +11,93 @@ import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useWorldIDAuth } from "@/contexts/WorldIDAuthContext";
 
-const fetchRpContext = async () => {
-  // Fetch a signed rp_context from your backend.
-  const response = await fetch("/api/idkit/rp-context", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch RP context');
-  }
-
-  const data = await response.json();
-  if (!data.success) {
-    throw new Error(data.error || 'Failed to fetch RP context');
-  }
-
-  return data.rpContext;
-};
-
-const verifyProof = async (result: any) => {
-  // Note: This must be implemented server side or in a trusted route handler
-  const response = await fetch("/api/v4/verify/app_f4bf6f2a1ca32e4f9af5f35b529f98f6", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(result),
-  });
-
-  if (response.ok) {
-    return response.json();
-  } else {
-    const { code, detail } = await response.json();
-    throw new Error(`Error Code ${code}: ${detail}`);
-  }
-};
-
 export default function WorldIDVerification() {
   const [, navigate] = useLocation();
   const { setUser } = useWorldIDAuth();
-  const [open, setOpen] = useState(false);
-  const [rpContext, setRpContext] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [rpContext, setRpContext] = useState<any>(null);
 
-  const handleOpenVerification = async () => {
-    if (!rpContext) {
-      setIsLoading(true);
-      setError(null);
+  // Fetch RP Context on component mount
+  useEffect(() => {
+    const fetchRpContext = async () => {
       try {
-        const context = await fetchRpContext();
-        setRpContext(context);
-        setIsLoading(false);
-        setOpen(true);
+        const response = await fetch("/api/idkit/rp-context", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch RP context");
+        }
+
+        const data = await response.json();
+        if (data.rpContext) {
+          setRpContext(data.rpContext);
+        } else {
+          setError("Failed to initialize verification system");
+        }
       } catch (err: any) {
-        console.error('Error fetching RP context:', err);
-        setError(err.message || "Failed to fetch RP context");
-        setIsLoading(false);
+        console.error("Error fetching RP context:", err);
+        setError(err.message || "Failed to initialize verification system");
       }
-    } else {
-      setOpen(true);
+    };
+
+    fetchRpContext();
+  }, []);
+
+  // Handle verification success
+  const handleVerifySuccess = async (result: any) => {
+    try {
+      console.log("Verification result:", result);
+      
+      // Call backend to verify proof with Worldcoin
+      const response = await fetch("/api/v4/verify/app_f4bf6f2a1ca32e4f9af5f35b529f98f6", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(result),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Verification failed");
+      }
+
+      const verifyData = await response.json();
+      console.log("Verification successful:", verifyData);
+
+      // Set user in World ID auth context
+      setUser({
+        nullifier_hash: result.nullifier_hash,
+        verification_level: "orb",
+        verified_at: new Date().toISOString(),
+      });
+      
+      setIsVerified(true);
+      setError(null);
+      setOpen(false);
+
+      // Redirect to dashboard after successful verification
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
+    } catch (err: any) {
+      console.error("Verification error:", err);
+      setError(err.message || "Verification failed");
+      setIsVerified(false);
     }
   };
 
-  const handleVerifySuccess = (result: any) => {
-    console.log("Verification successful:", result);
-    // Set user in World ID auth context
-    setUser({
-      nullifier_hash: result.nullifier_hash,
-      verification_level: "orb",
-      verified_at: new Date().toISOString(),
-    });
-    setIsVerified(true);
-    setError(null);
-    // Redirect to dashboard after successful verification
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 2000);
-  };
-
+  // Handle verification error
   const handleVerifyError = (error: any) => {
-    console.error("Verification error:", error);
-    setError(error.message || "Verification failed");
+    console.error("IDKit error:", error);
+    setError(error?.message || "Verification failed. Please try again.");
     setIsVerified(false);
   };
 
@@ -109,7 +110,7 @@ export default function WorldIDVerification() {
             <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">World ID 認證</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">真人驗證</h1>
             <p className="text-slate-400">使用 World ID 4.0 驗證您的身份</p>
           </div>
 
@@ -158,40 +159,38 @@ export default function WorldIDVerification() {
                 進入應用
               </Button>
             ) : (
-              <>
-                  <Button
-                    onClick={handleOpenVerification}
-                    disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        準備中...
-                      </>
-                    ) : (
-                      "開始認證"
-                    )}
-                  </Button>
-
-                {rpContext && (
-                  <IDKitRequestWidget
-                    open={open}
-                    onOpenChange={setOpen}
-                    app_id="app_f4bf6f2a1ca32e4f9af5f35b529f98f6"
-                    action="nexus"
-                    action_description="Verify your identity to access Nexus"
-                    rp_context={rpContext}
-                    allow_legacy_proofs={true}
-                    preset={deviceLegacy()}
-                    handleVerify={verifyProof}
-                    onSuccess={(result) => handleVerifySuccess(result)}
-                    onError={(error) => handleVerifyError(error)}
-                  />
+              <Button
+                onClick={() => setOpen(true)}
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    準備中...
+                  </>
+                ) : (
+                  "開始認證"
                 )}
-              </>
+              </Button>
             )}
           </div>
+
+          {/* IDKit Widget */}
+          {rpContext && (
+            <IDKitRequestWidget
+              app_id="app_f4bf6f2a1ca32e4f9af5f35b529f98f6"
+              action="nexus"
+              action_description="Verify your identity to access Nexus"
+              rp_context={rpContext}
+              onSuccess={handleVerifySuccess}
+              onError={handleVerifyError}
+              open={open}
+              onOpenChange={setOpen}
+              allow_legacy_proofs={true}
+              constraints={deviceLegacy() as any}
+            />
+          )}
 
           {/* 幫助文本 */}
           <p className="text-xs text-slate-500 text-center mt-6">
