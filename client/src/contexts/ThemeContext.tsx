@@ -23,8 +23,14 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (switchable) {
-      const stored = localStorage.getItem("theme");
-      return (stored as Theme) || defaultTheme;
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const stored = localStorage.getItem("theme");
+          return (stored as Theme) || defaultTheme;
+        }
+      } catch (error) {
+        console.warn('Failed to access localStorage for theme:', error);
+      }
     }
     return defaultTheme;
   });
@@ -38,7 +44,13 @@ export function ThemeProvider({
     }
 
     if (switchable) {
-      localStorage.setItem("theme", theme);
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem("theme", theme);
+        }
+      } catch (error) {
+        console.warn('Failed to save theme to localStorage:', error);
+      }
     }
   }, [theme, switchable]);
 
