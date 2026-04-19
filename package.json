@@ -48,6 +48,7 @@
     "@trpc/react-query": "^11.6.0",
     "@trpc/server": "^11.6.0",
     "@worldcoin/idkit": "^4.1.1",
+    "@worldcoin/idkit-server": "^1.1.1",
     "@worldcoin/minikit-js": "^2.0.3",
     "@worldcoin/minikit-react": "^2.0.3",
     "axios": "^1.12.0",

@@ -1,5 +1,6 @@
 import { Express, Request, Response } from 'express';
 import crypto from 'crypto';
+import { signRequest } from '@worldcoin/idkit-server';
 
 /**
  * World ID 4.0 驗證路由
@@ -13,14 +14,29 @@ export function registerWorldIdRoutes(app: Express) {
    */
   app.post('/api/idkit/rp-context', async (req: Request, res: Response) => {
     try {
-      // 生成隨機 nonce
-      const nonce = crypto.randomBytes(32).toString('hex');
-      
-      // 在實際應用中，您需要從 Worldcoin 後端獲取簽名的 rp_context
-      // 這是一個簡化的示例
+      const rpSigningKey = process.env.RP_SIGNING_KEY;
+      if (!rpSigningKey) {
+        return res.status(500).json({
+          success: false,
+          error: 'RP_SIGNING_KEY not configured',
+        });
+      }
+
+      // 使用 signRequest 生成簽名的 RP context
+      // action 參數是必需的，用於唯一性證明
+      const rpSignature = signRequest({
+        signingKeyHex: rpSigningKey,
+        action: 'nexus',
+        ttl: 600, // 10 分鐘有效期
+      });
+
+      // 構建 RpContext 對象
       const rpContext = {
-        nonce,
-        timestamp: Date.now(),
+        rp_id: process.env.WORLD_ID_APP_ID || 'app_f4bf6f2a1ca32e4f9af5f35b529f98f6',
+        nonce: rpSignature.nonce,
+        created_at: rpSignature.createdAt,
+        expires_at: rpSignature.expiresAt,
+        signature: rpSignature.sig,
       };
 
       res.json({

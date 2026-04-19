@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   IDKitRequestWidget,
-  deviceLegacy,
+  orbLegacy,
 } from "@worldcoin/idkit";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -187,8 +187,8 @@ export default function WorldIDVerification() {
               onError={handleVerifyError}
               open={open}
               onOpenChange={setOpen}
+              preset={orbLegacy()}
               allow_legacy_proofs={true}
-              constraints={deviceLegacy() as any}
             />
           )}
 
