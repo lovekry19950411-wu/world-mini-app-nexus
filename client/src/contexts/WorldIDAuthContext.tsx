@@ -17,31 +17,55 @@ interface WorldIDAuthContextType {
 const WorldIDAuthContext = createContext<WorldIDAuthContextType | undefined>(undefined);
 
 export function WorldIDAuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<WorldIDUser | null>(() => {
-    // Try to load from localStorage on mount
-    const stored = localStorage.getItem('world-id-user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [user, setUser] = useState<WorldIDUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = React.useState(false);
+
+  // Load from localStorage in useEffect to avoid render-phase errors
+  React.useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = localStorage.getItem('world-id-user');
+        if (stored) {
+          setUser(JSON.parse(stored));
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load World ID user from localStorage:', error);
+    }
+    setIsInitialized(true);
+  }, []);
 
   const handleSetUser = useCallback((newUser: WorldIDUser | null) => {
     setUser(newUser);
-    if (newUser) {
-      localStorage.setItem('world-id-user', JSON.stringify(newUser));
-    } else {
-      localStorage.removeItem('world-id-user');
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        if (newUser) {
+          localStorage.setItem('world-id-user', JSON.stringify(newUser));
+        } else {
+          localStorage.removeItem('world-id-user');
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to update World ID user in localStorage:', error);
     }
   }, []);
 
   const logout = useCallback(() => {
     handleSetUser(null);
-    localStorage.removeItem('world-id-user');
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem('world-id-user');
+      }
+    } catch (error) {
+      console.warn('Failed to clear World ID user from localStorage:', error);
+    }
   }, [handleSetUser]);
 
   const value: WorldIDAuthContextType = {
     user,
     isAuthenticated: !!user,
-    isLoading,
+    isLoading: isLoading || !isInitialized,
     setUser: handleSetUser,
     logout,
   };
