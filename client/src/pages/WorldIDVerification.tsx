@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
+import { useWorldIDAuth } from "@/contexts/WorldIDAuthContext";
 
 const fetchRpContext = async () => {
   // Fetch a signed rp_context from your backend.
@@ -51,6 +52,7 @@ const verifyProof = async (result: any) => {
 
 export default function WorldIDVerification() {
   const [, navigate] = useLocation();
+  const { setUser } = useWorldIDAuth();
   const [open, setOpen] = useState(false);
   const [rpContext, setRpContext] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,6 +80,12 @@ export default function WorldIDVerification() {
 
   const handleVerifySuccess = (result: any) => {
     console.log("Verification successful:", result);
+    // Set user in World ID auth context
+    setUser({
+      nullifier_hash: result.nullifier_hash,
+      verification_level: "orb",
+      verified_at: new Date().toISOString(),
+    });
     setIsVerified(true);
     setError(null);
     // Redirect to dashboard after successful verification
@@ -153,7 +161,7 @@ export default function WorldIDVerification() {
               <>
                   <Button
                     onClick={handleOpenVerification}
-                    disabled={isLoading || !rpContext}
+                    disabled={isLoading}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
                   >
                     {isLoading ? (

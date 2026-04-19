@@ -1,16 +1,15 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getLoginUrl } from "@/const";
 import { Loader2, ShoppingBag, Coins, Zap, TrendingUp, Lock } from "lucide-react";
 import { useLocation } from "wouter";
+import { useWorldIDAuth } from "@/contexts/WorldIDAuthContext";
 
 export default function Home() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useWorldIDAuth();
   const [, navigate] = useLocation();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <Loader2 className="w-12 h-12 animate-spin text-purple-400" />
@@ -65,12 +64,12 @@ export default function Home() {
               </div>
             ) : (
               <Button
-                onClick={() => (window.location.href = getLoginUrl())}
+                onClick={() => navigate("/verify")}
                 size="lg"
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
               >
                 <Lock className="mr-2 w-5 h-5" />
-                World ID 認證登入
+                World ID 4.0 認證
               </Button>
             )}
           </div>
@@ -85,157 +84,52 @@ export default function Home() {
           <Card className="bg-slate-800/50 border-purple-500/20 hover:border-purple-500/50 transition-all">
             <CardHeader>
               <ShoppingBag className="w-8 h-8 text-purple-400 mb-2" />
-              <CardTitle className="text-white">交易市場</CardTitle>
-              <CardDescription className="text-slate-400">二手與全新商品交易</CardDescription>
+              <CardTitle>交易市場</CardTitle>
+              <CardDescription>買賣商品，安全交易</CardDescription>
             </CardHeader>
-            <CardContent className="text-slate-300">
-              <ul className="space-y-2 text-sm">
-                <li>✓ 商品上架與搜尋</li>
-                <li>✓ 圖片上傳與展示</li>
-                <li>✓ WLD 支付整合</li>
-                <li>✓ 信譽評分系統</li>
-              </ul>
+            <CardContent>
+              <p className="text-slate-300">支持 WLD 和 NEXUS 代幣支付，完全去中心化的交易體驗。</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800/50 border-blue-500/20 hover:border-blue-500/50 transition-all">
+          <Card className="bg-slate-800/50 border-purple-500/20 hover:border-purple-500/50 transition-all">
             <CardHeader>
-              <Coins className="w-8 h-8 text-blue-400 mb-2" />
-              <CardTitle className="text-white">平台代幣</CardTitle>
-              <CardDescription className="text-slate-400">NEXUS 代幣系統</CardDescription>
+              <Coins className="w-8 h-8 text-pink-400 mb-2" />
+              <CardTitle>代幣系統</CardTitle>
+              <CardDescription>賺取和兌換代幣</CardDescription>
             </CardHeader>
-            <CardContent className="text-slate-300">
-              <ul className="space-y-2 text-sm">
-                <li>✓ 交易回饋獎勵</li>
-                <li>✓ 活躍獎勵計劃</li>
-                <li>✓ 代幣兌換與提現</li>
-                <li>✓ 社區治理投票</li>
-              </ul>
+            <CardContent>
+              <p className="text-slate-300">通過交易和參與活動獲得 NEXUS 代幣獎勵。</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800/50 border-pink-500/20 hover:border-pink-500/50 transition-all">
+          <Card className="bg-slate-800/50 border-purple-500/20 hover:border-purple-500/50 transition-all">
             <CardHeader>
-              <Zap className="w-8 h-8 text-pink-400 mb-2" />
-              <CardTitle className="text-white">抽獎系統</CardTitle>
-              <CardDescription className="text-slate-400">每週開獎贏大獎</CardDescription>
+              <Zap className="w-8 h-8 text-blue-400 mb-2" />
+              <CardTitle>金融服務</CardTitle>
+              <CardDescription>借貸、抽獎、投資</CardDescription>
             </CardHeader>
-            <CardContent className="text-slate-300">
-              <ul className="space-y-2 text-sm">
-                <li>✓ WLD 或代幣購票</li>
-                <li>✓ 透明開獎機制</li>
-                <li>✓ 每週大獎分配</li>
-                <li>✓ 獲獎紀錄查詢</li>
-              </ul>
+            <CardContent>
+              <p className="text-slate-300">多種金融工具，幫助您增長資產。</p>
             </CardContent>
           </Card>
-
-          <Card className="bg-slate-800/50 border-green-500/20 hover:border-green-500/50 transition-all">
-            <CardHeader>
-              <TrendingUp className="w-8 h-8 text-green-400 mb-2" />
-              <CardTitle className="text-white">貸款池</CardTitle>
-              <CardDescription className="text-slate-400">質押借貸服務</CardDescription>
-            </CardHeader>
-            <CardContent className="text-slate-300">
-              <ul className="space-y-2 text-sm">
-                <li>✓ 質押資產借貸</li>
-                <li>✓ 靈活利率機制</li>
-                <li>✓ 自動清算保護</li>
-                <li>✓ 還款計劃管理</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-800/50 border-cyan-500/20 hover:border-cyan-500/50 transition-all">
-            <CardHeader>
-              <Lock className="w-8 h-8 text-cyan-400 mb-2" />
-              <CardTitle className="text-white">World ID 認證</CardTitle>
-              <CardDescription className="text-slate-400">真人身份驗證</CardDescription>
-            </CardHeader>
-            <CardContent className="text-slate-300">
-              <ul className="space-y-2 text-sm">
-                <li>✓ 4.0 版本認證</li>
-                <li>✓ 零 KYC 流程</li>
-                <li>✓ 跨應用不可鏈接</li>
-                <li>✓ 防重複認證</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-800/50 border-orange-500/20 hover:border-orange-500/50 transition-all">
-            <CardHeader>
-              <Loader2 className="w-8 h-8 text-orange-400 mb-2" />
-              <CardTitle className="text-white">個人中心</CardTitle>
-              <CardDescription className="text-slate-400">一站式管理平台</CardDescription>
-            </CardHeader>
-            <CardContent className="text-slate-300">
-              <ul className="space-y-2 text-sm">
-                <li>✓ 認證狀態查詢</li>
-                <li>✓ 交易紀錄統計</li>
-                <li>✓ 代幣餘額管理</li>
-                <li>✓ 貸款與抽獎狀態</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Stats Section */}
-      <div className="bg-slate-800/30 border-t border-slate-700/50">
-        <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-purple-400">1200M+</div>
-              <div className="text-slate-400 mt-2">全球認證用戶</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-blue-400">160+</div>
-              <div className="text-slate-400 mt-2">支持國家地區</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-pink-400">0%</div>
-              <div className="text-slate-400 mt-2">KYC 要求</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-green-400">24/7</div>
-              <div className="text-slate-400 mt-2">全天候運營</div>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* CTA Section */}
       <div className="max-w-4xl mx-auto px-4 py-20 sm:px-6 lg:px-8 text-center">
         <h2 className="text-3xl font-bold text-white mb-6">準備好開始了嗎？</h2>
-        <p className="text-slate-300 mb-8 text-lg">
-          加入 Nexus，體驗去中心化交易的未來。無需複雜的 KYC，只需 World ID 認證即可開始。
+        <p className="text-xl text-slate-300 mb-8">
+          使用 World ID 4.0 進行真人驗證，加入 Nexus 生態。
         </p>
-
-        {isAuthenticated ? (
-          <div className="flex gap-4 justify-center">
-            <Button
-              onClick={() => navigate("/marketplace")}
-              size="lg"
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-            >
-              開始交易
-            </Button>
-            <Button
-              onClick={() => navigate("/dashboard")}
-              size="lg"
-              variant="outline"
-              className="border-purple-400 text-purple-300"
-            >
-              查看儀表板
-            </Button>
-          </div>
-        ) : (
+        {!isAuthenticated && (
           <Button
-            onClick={() => (window.location.href = getLoginUrl())}
+            onClick={() => navigate("/verify")}
             size="lg"
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
           >
-            立即認證登入
+            <Lock className="mr-2 w-5 h-5" />
+            開始驗證
           </Button>
         )}
       </div>
