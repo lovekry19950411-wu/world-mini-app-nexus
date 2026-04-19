@@ -52,30 +52,69 @@ export function registerWorldIdRoutes(app: Express) {
         });
       }
 
-      // 在實際應用中，您需要調用 Worldcoin 後端 API 來驗證證明
-      // 這是一個簡化的示例
-      const isValid = true; // 在實際應用中應該驗證
-
-      if (!isValid) {
-        return res.status(400).json({
-          code: 'INVALID_PROOF',
-          detail: 'The provided proof is invalid',
+      const apiKey = process.env.WORLD_ID_API_KEY || 'rp_f3e265557bade5a0';
+      
+      // 調用 Worldcoin 後端 API 驗證證明
+      try {
+        const verifyResponse = await fetch('https://api.worldcoin.org/v1/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            proof,
+            merkle_root,
+            nullifier_hash,
+            verification_level: verification_level || 'orb',
+            action: 'nexus',
+            signal: '',
+          }),
         });
-      }
 
-      // 返回驗證成功
-      res.json({
-        success: true,
-        verified: true,
-        nullifier_hash,
-        merkle_root,
-        verification_level: verification_level || 'orb',
-      });
-    } catch (error) {
+        const verifyData = await verifyResponse.json();
+
+        if (!verifyResponse.ok) {
+          console.error('Worldcoin verification failed:', verifyData);
+          return res.status(verifyResponse.status).json({
+            code: verifyData.code || 'verification_failed',
+            detail: verifyData.detail || 'Verification failed',
+          });
+        }
+
+        // 驗證成功
+        res.json({
+          success: true,
+          verified: true,
+          nullifier_hash,
+          merkle_root,
+          verification_level: verification_level || 'orb',
+        });
+      } catch (apiError: any) {
+        console.error('Error calling Worldcoin API:', apiError);
+        
+        // 開發模式下允許驗證通過
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Development mode: accepting proof without Worldcoin verification');
+          res.json({
+            success: true,
+            verified: true,
+            nullifier_hash,
+            merkle_root,
+            verification_level: verification_level || 'orb',
+          });
+        } else {
+          res.status(500).json({
+            code: 'VERIFICATION_ERROR',
+            detail: 'Failed to verify with Worldcoin backend',
+          });
+        }
+      }
+    } catch (error: any) {
       console.error('Verification error:', error);
       res.status(500).json({
         code: 'VERIFICATION_ERROR',
-        detail: 'An error occurred during verification',
+        detail: error.message || 'An error occurred during verification',
       });
     }
   });
