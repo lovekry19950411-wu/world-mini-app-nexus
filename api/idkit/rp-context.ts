@@ -19,9 +19,8 @@ export default async function handler(req: any, res: any) {
     const privateKey = createPrivateKey({ key: pkcs8Der, format: 'der', type: 'pkcs8' });
     const nonce = crypto.randomUUID();
     const now = Math.floor(Date.now() / 1000);
-    // 用 WORLD_APP_ID（不帶 VITE_ 前綴），server 端讀不到 VITE_ 變數
-    const appId = process.env.WORLD_APP_ID || process.env.VITE_WORLD_APP_ID;
-    const rpId = process.env.WORLD_RP_ID || process.env.VITE_WORLD_RP_ID;
+    const appId = process.env.WORLD_APP_ID;
+    const rpId = process.env.WORLD_RP_ID;
     const token = await new SignJWT({
       app_id: appId,
       rp_id: rpId,
