@@ -17,6 +17,7 @@ import Tasks from "./pages/Tasks";
 import Exchange from "./pages/Exchange";
 import Referral from "./pages/Referral";
 import ProductDetail from "./pages/ProductDetail";
+import { Analytics } from "@vercel/analytics/react";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -57,6 +58,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <Analytics />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
