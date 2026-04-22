@@ -1,99 +1,51 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loader2, CheckCircle, AlertCircle, Globe, RefreshCcw } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Globe } from 'lucide-react';
 import { getMiniKitInfo, initMiniKit } from '@/lib/minikit';
 import { useWorldID } from '@/hooks/useWorldID';
-import { trpc } from '@/lib/trpc';
 
 export default function WorldIDAuth() {
   const [miniKitInfo, setMiniKitInfo] = useState(getMiniKitInfo());
-  const [isRedirecting, setIsRedirecting] = useState(false);
   const { isLoading, isVerified, error, verify, reset } = useWorldID();
-  
-  // Use tRPC to check auth status
-  const utils = trpc.useUtils();
 
   useEffect(() => {
     // 初始化 MiniKit
     initMiniKit();
-    // Re-check MiniKit status after initialization
-    const timer = setTimeout(() => {
-      setMiniKitInfo(getMiniKitInfo());
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Redirect after successful verification
-  useEffect(() => {
-    if (isVerified && !isRedirecting) {
-      setIsRedirecting(true);
-      // Invalidate auth cache and redirect
-      utils.auth.me.invalidate().then(() => {
-        // Small delay to ensure cookie is properly set
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 500);
-      }).catch(() => {
-        // If invalidation fails, still redirect
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 500);
-      });
-    }
-  }, [isVerified, isRedirecting, utils.auth.me]);
-
-  const handleVerify = useCallback(async () => {
-    // 使用固定的 action（應與 World ID Developer Portal 配置一致）
-    // action 應該是在 World ID 開發者門戶中註冊的 action
-    const action = import.meta.env.VITE_WORLD_ID_ACTION || 'nexus-verification';
-    // signal 可以是用戶標識符或時間戳
-    const signal = `${Date.now()}`;
-
-    await verify(action, signal);
-  }, [verify]);
-
-  const handleRefreshStatus = useCallback(() => {
     setMiniKitInfo(getMiniKitInfo());
   }, []);
+
+  const handleVerify = async () => {
+    // 使用唯一的 action 和 signal
+    const action = 'nexus-verification';
+    const signal = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    await verify(action, signal);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 flex items-center justify-center">
       <div className="w-full max-w-md">
         {/* 環境信息卡 */}
         <Card className="mb-6 bg-slate-800/50 border-slate-700 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <Globe className="w-5 h-5 text-blue-400" />
-              <h3 className="font-semibold text-slate-200">Environment Info</h3>
-            </div>
-            <button 
-              onClick={handleRefreshStatus}
-              className="p-1.5 rounded-md hover:bg-slate-700 transition-colors"
-              title="Refresh status"
-            >
-              <RefreshCcw className="w-4 h-4 text-slate-400" />
-            </button>
+          <div className="flex items-center gap-3 mb-3">
+            <Globe className="w-5 h-5 text-blue-400" />
+            <h3 className="font-semibold text-slate-200">Environment Info</h3>
           </div>
           <div className="space-y-2 text-sm text-slate-400">
             <div className="flex justify-between">
               <span>Environment:</span>
               <span className="text-slate-200 font-mono">
-                {miniKitInfo.environment === 'world-app' ? 'World App' : 'Browser'}
+                {miniKitInfo.environment === 'world-app' ? '🌍 World App' : '🌐 Browser'}
               </span>
             </div>
             <div className="flex justify-between">
               <span>MiniKit Status:</span>
               <span className={miniKitInfo.isInstalled ? 'text-green-400' : 'text-yellow-400'}>
-                {miniKitInfo.isInstalled ? 'Installed' : 'Not Installed'}
+                {miniKitInfo.isInstalled ? '✓ Installed' : '⚠ Not Installed'}
               </span>
             </div>
           </div>
-          {!miniKitInfo.isInstalled && (
-            <p className="mt-3 text-xs text-slate-500">
-              Tip: Open this page in World App for full functionality
-            </p>
-          )}
         </Card>
 
         {/* 主認證卡 */}
@@ -129,11 +81,8 @@ export default function WorldIDAuth() {
           {!miniKitInfo.isWorldApp && (
             <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
               <div className="flex items-center gap-2 text-yellow-400 text-sm">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <div>
-                  <p>此應用應在 World App 內運行以獲得完整功能</p>
-                  <p className="text-yellow-500/70 mt-1">This app should be opened in World App for full functionality</p>
-                </div>
+                <AlertCircle className="w-4 h-4" />
+                <span>此應用應在 World App 內運行以獲得完整功能</span>
               </div>
             </div>
           )}
@@ -156,41 +105,36 @@ export default function WorldIDAuth() {
 
           {/* 按鈕 */}
           <div className="space-y-3">
-            {isVerified || isRedirecting ? (
+            {isVerified ? (
               <>
-                <div className="flex items-center justify-center gap-2 py-3 text-green-400">
-                  {isRedirecting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>正在跳轉... / Redirecting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-5 h-5" />
-                      <span>驗證成功 / Verified</span>
-                    </>
-                  )}
-                </div>
+                <Button
+                  onClick={reset}
+                  variant="outline"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  重新認證
+                </Button>
                 <Button
                   onClick={() => window.location.href = '/'}
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                 >
-                  進入應用 / Enter App
+                  進入應用
                 </Button>
               </>
             ) : (
               <Button
                 onClick={handleVerify}
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold disabled:opacity-50"
+                disabled={isLoading || !miniKitInfo.isWorldApp}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    驗證中... / Verifying...
+                    驗證中...
                   </>
                 ) : (
-                  '開始認證 / Start Verification'
+                  '開始認證'
                 )}
               </Button>
             )}

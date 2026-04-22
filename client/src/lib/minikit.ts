@@ -1,4 +1,4 @@
-import { MiniKit, VerificationLevel } from "@worldcoin/minikit-js";
+import { MiniKit } from "@worldcoin/minikit-js";
 
 /**
  * MiniKit 支付系統集成
@@ -27,58 +27,28 @@ export interface VerifyResult {
 }
 
 /**
- * 檢查 MiniKit 是否可用（在 World App 環境中）
+ * 檢查 MiniKit 是否可用
  */
 export const isMiniKitAvailable = (): boolean => {
-  try {
-    // Check if MiniKit is defined and has the isInstalled method
-    if (typeof MiniKit === "undefined") {
-      return false;
-    }
-    // MiniKit.isInstalled() returns true when running inside World App
-    return MiniKit.isInstalled();
-  } catch (error) {
-    console.warn("[MiniKit] Error checking availability:", error);
-    return false;
-  }
+  return typeof MiniKit !== "undefined";
 };
 
 /**
  * 初始化 MiniKit
  */
 export const initMiniKit = (): void => {
-  try {
-    if (typeof MiniKit !== "undefined") {
-      // Install MiniKit - this is required before using any commands
-      MiniKit.install();
-      console.log("[MiniKit] Initialized successfully, isInstalled:", MiniKit.isInstalled());
-    } else {
-      console.log("[MiniKit] MiniKit not available in this environment");
-    }
-  } catch (error) {
-    console.warn("[MiniKit] Error during initialization:", error);
-  }
+  console.log("MiniKit initialized");
 };
 
 /**
  * 獲取 MiniKit 信息
  */
 export const getMiniKitInfo = () => {
-  try {
-    const isInstalled = isMiniKitAvailable();
-    return {
-      isInstalled,
-      isWorldApp: isInstalled,
-      environment: isInstalled ? "world-app" : "browser",
-    };
-  } catch (error) {
-    console.warn("[MiniKit] Error getting info:", error);
-    return {
-      isInstalled: false,
-      isWorldApp: false,
-      environment: "browser",
-    };
-  }
+  return {
+    isInstalled: isMiniKitAvailable(),
+    isWorldApp: isMiniKitAvailable(),
+    environment: isMiniKitAvailable() ? "world-app" : "browser",
+  };
 };
 
 /**
@@ -128,55 +98,32 @@ export const executeWorldIDVerification = async (
   signal: string
 ): Promise<VerifyResult> => {
   try {
-    // Check if we're in World App environment
     if (!isMiniKitAvailable()) {
-      console.log("[MiniKit] Not in World App, using fallback verification");
       return {
         status: "error",
-        error: "請在 World App 中打開此應用進行驗證 / Please open this app in World App to verify",
+        error: "MiniKit not available",
       };
     }
 
-    console.log("[MiniKit] Starting World ID verification with action:", action);
-    
-    // Use MiniKit.commands.verify for World ID verification
-    // MiniKit 2.x API: https://docs.world.org/mini-apps/commands/verify
-    const verifyPayload = {
-      action,
-      signal,
-      verification_level: VerificationLevel.Orb, // 使用 Orb 級別驗證（最高安全級別）
-    };
+    const response = await (MiniKit as any).commandRequest({
+      command: "verify",
+      params: {
+        action,
+        signal,
+      },
+    });
 
-    const { finalPayload } = await MiniKit.commandsAsync.verify(verifyPayload);
-
-    if (!finalPayload) {
-      return {
-        status: "error",
-        error: "驗證被取消或失敗 / Verification was cancelled or failed",
-      };
-    }
-
-    // Check for errors in the response
-    if ("error_code" in finalPayload && finalPayload.error_code) {
-      console.error("[MiniKit] Verification error:", finalPayload);
-      return {
-        status: "error",
-        error: `驗證錯誤: ${finalPayload.error_code}`,
-      };
-    }
-
-    // Successful verification
-    console.log("[MiniKit] Verification successful");
     return {
-      status: "success",
-      proof: finalPayload.proof,
-      nullifier_hash: finalPayload.nullifier_hash,
+      status: response.status === "success" ? "success" : "error",
+      proof: response.proof,
+      nullifier_hash: response.nullifier_hash,
+      error: response.error,
     };
   } catch (error) {
-    console.error("[MiniKit] Verification failed:", error);
+    console.error("Verification failed:", error);
     return {
       status: "error",
-      error: error instanceof Error ? error.message : "驗證失敗 / Verification failed",
+      error: error instanceof Error ? error.message : "Verification failed",
     };
   }
 };

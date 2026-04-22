@@ -3,10 +3,7 @@ import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { ENV } from '../_core/env';
 import { getDb } from '../db';
 import { eq } from 'drizzle-orm';
-import { users, nullifiers } from '../../drizzle/schema';
-import { sdk } from '../_core/sdk';
-import { COOKIE_NAME, ONE_YEAR_MS } from '@shared/const';
-import { getSessionCookieOptions } from '../_core/cookies';
+import { users } from '../../drizzle/schema';
 
 /**
  * World ID 認證路由
@@ -36,180 +33,103 @@ export const worldIdRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        console.log('[World ID] Starting verification...');
-        
         // 1. 驗證輸入格式
         if (!input.proof || input.proof.length === 0) {
           return {
             success: false,
-            error: 'Invalid proof format / 無效的證明格式',
+            error: 'Invalid proof format',
           };
         }
 
         if (!input.nullifierHash || input.nullifierHash.length === 0) {
           return {
             success: false,
-            error: 'Invalid nullifier hash / 無效的 nullifier hash',
+            error: 'Invalid nullifier hash',
           };
         }
 
         if (!input.action || input.action.length === 0) {
           return {
             success: false,
-            error: 'Invalid action / 無效的 action',
+            error: 'Invalid action',
           };
         }
 
         if (!input.signal || input.signal.length === 0) {
           return {
             success: false,
-            error: 'Invalid signal / 無效的 signal',
+            error: 'Invalid signal',
           };
         }
 
         // 2. 驗證 proof 格式（基本檢查）
+        // 在實際應用中，應該調用 World ID 後端 API 驗證
+        // 參考: https://docs.world.org/world-id/idkit/integrate
         if (!isValidProofFormat(input.proof)) {
           return {
             success: false,
-            error: 'Invalid proof format / 證明格式無效',
+            error: 'Invalid proof format',
           };
         }
 
-        const db = await getDb();
-        
         // 3. 檢查 nullifier 是否已被使用（防重複認證）
-        if (db) {
-          try {
-            const existingNullifier = await db
-              .select()
-              .from(nullifiers)
-              .where(eq(nullifiers.nullifier, input.nullifierHash))
-              .limit(1);
+        // TODO: 在數據庫中查詢 nullifier，確保未被使用
+        // const existingNullifier = await db.query.nullifiers.findFirst({
+        //   where: eq(nullifiers.hash, input.nullifierHash),
+        // });
+        // if (existingNullifier) {
+        //   return {
+        //     success: false,
+        //     error: 'This credential has already been used',
+        //   };
+        // }
 
-            if (existingNullifier.length > 0) {
-              console.log('[World ID] Nullifier already used, logging in existing user');
-              // 用戶已經驗證過，允許登入但不重新創建
-              const existingUser = await db
-                .select()
-                .from(users)
-                .where(eq(users.id, existingNullifier[0].userId))
-                .limit(1);
+        // 4. 儲存 nullifier（防止重複使用）
+        // TODO: 在數據庫中儲存 nullifier
+        // await db.insert(nullifiers).values({
+        //   hash: input.nullifierHash,
+        //   action: input.action,
+        //   signal: input.signal,
+        //   createdAt: new Date(),
+        // });
 
-              if (existingUser.length > 0) {
-                // 創建 session token 並設置 cookie
-                const sessionToken = await sdk.createSessionToken(existingUser[0].openId, {
-                  name: existingUser[0].name || 'World ID User',
-                  expiresInMs: ONE_YEAR_MS,
-                });
-
-                const cookieOptions = getSessionCookieOptions(ctx.req);
-                ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-
-                return {
-                  success: true,
-                  nullifierHash: input.nullifierHash,
-                  userId: existingUser[0].id,
-                  message: '登入成功 / Login successful',
-                  isExistingUser: true,
-                };
-              }
+        // 5. 更新用戶認證狀態
+        if (ctx.user) {
+          const db = await getDb();
+          if (db) {
+            try {
+              // 標記用戶已驗證
+              // TODO: 添加 verified 字段到 users 表
+              // await db.update(users)
+              //   .set({ 
+              //     verified: true,
+              //     worldIdNullifier: input.nullifierHash,
+              //     verifiedAt: new Date(),
+              //   })
+              //   .where(eq(users.id, ctx.user.id));
+            } catch (dbError) {
+              console.warn('[World ID] Failed to update user verification status:', dbError);
+              // 不中斷流程，繼續返回成功
             }
-          } catch (dbError) {
-            console.warn('[World ID] Database check error:', dbError);
-            // 繼續處理，可能是數據庫暫時不可用
           }
-        }
-
-        // 4. 創建新用戶
-        const openId = `world_id_${input.nullifierHash.substring(0, 32)}`;
-        let userId: number | undefined;
-
-        if (db) {
-          try {
-            // 檢查用戶是否已存在
-            const existingUser = await db
-              .select()
-              .from(users)
-              .where(eq(users.openId, openId))
-              .limit(1);
-
-            if (existingUser.length > 0) {
-              userId = existingUser[0].id;
-            } else {
-              // 創建新用戶
-              await db.insert(users).values({
-                openId,
-                name: 'World ID User',
-                loginMethod: 'world_id',
-                role: 'user',
-              });
-
-              const newUser = await db
-                .select()
-                .from(users)
-                .where(eq(users.openId, openId))
-                .limit(1);
-
-              userId = newUser[0]?.id;
-            }
-
-            // 5. 儲存 nullifier
-            if (userId) {
-              try {
-                await db.insert(nullifiers).values({
-                  nullifier: input.nullifierHash,
-                  action: input.action,
-                  userId,
-                });
-              } catch (nullifierError) {
-                console.warn('[World ID] Failed to save nullifier (may already exist):', nullifierError);
-              }
-            }
-          } catch (dbError) {
-            console.error('[World ID] Database operation error:', dbError);
-          }
-        }
-
-        // 6. 創建 session token 並設置 cookie
-        try {
-          const sessionToken = await sdk.createSessionToken(openId, {
-            name: 'World ID User',
-            expiresInMs: ONE_YEAR_MS,
-          });
-
-          const cookieOptions = getSessionCookieOptions(ctx.req);
-          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-          
-          console.log('[World ID] Session cookie set successfully');
-        } catch (sessionError) {
-          console.error('[World ID] Failed to create session:', sessionError);
-          // 驗證成功但創建 session 失敗，返回警告
-          return {
-            success: true,
-            nullifierHash: input.nullifierHash,
-            userId,
-            message: '驗證成功但創建 session 失敗，請重試 / Verified but session creation failed',
-            warning: 'session_creation_failed',
-          };
         }
 
         console.log('[World ID] Verification successful', {
           action: input.action,
           nullifierHash: input.nullifierHash.substring(0, 10) + '...',
-          userId,
+          userId: ctx.user?.id,
         });
 
         return {
           success: true,
           nullifierHash: input.nullifierHash,
-          userId,
-          message: '驗證成功 / Verification successful',
+          message: 'World ID verification successful',
         };
       } catch (error) {
         console.error('[World ID] Verification error:', error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : '驗證失敗 / Verification failed',
+          error: error instanceof Error ? error.message : 'Verification failed',
         };
       }
     }),
