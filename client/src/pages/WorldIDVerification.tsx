@@ -48,7 +48,7 @@ export default function WorldIDVerification() {
     setError(null);
     try {
       const res = await fetch(
-        `https://developer.world.org/api/v4/verify/${RP_ID}`,
+        `https://developer.worldcoin.org/api/v4/verify/${RP_ID}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
