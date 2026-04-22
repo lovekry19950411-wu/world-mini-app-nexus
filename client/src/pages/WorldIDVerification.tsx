@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { useWorldIDAuth } from "@/contexts/WorldIDAuthContext";
 
 const APP_ID = "app_f4bf6f2a1ca32e4f9af5f35b529f98f6" as `app_${string}`;
+const RP_ID = "rp_f3e265557bade5a0";
 const ACTION = "nexus";
 
 export default function WorldIDVerification() {
@@ -19,6 +20,7 @@ export default function WorldIDVerification() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
   const [rpContext, setRpContext] = useState<any>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     const fetchRpContext = async () => {
@@ -28,12 +30,11 @@ export default function WorldIDVerification() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: ACTION }),
         });
-        if (!response.ok) throw new Error("Failed to fetch RP context");
+        if (!response.ok) throw new Error("rp-context API 回應失敗");
         const data = await response.json();
-        // 後端回傳 { sig, nonce, created_at, expires_at }
-        // 組成 rp_context 格式
+        if (!data.nonce || !data.sig) throw new Error("回應格式錯誤");
         setRpContext({
-          rp_id: process.env.VITE_WORLD_RP_ID || "rp_f3e265557bade5a0",
+          rp_id: RP_ID,
           nonce: data.nonce,
           created_at: data.created_at,
           expires_at: data.expires_at,
@@ -41,6 +42,8 @@ export default function WorldIDVerification() {
         });
       } catch (err: any) {
         setError("驗證系統初始化失敗：" + err.message);
+      } finally {
+        setIsInitializing(false);
       }
     };
     fetchRpContext();
@@ -51,7 +54,7 @@ export default function WorldIDVerification() {
     setError(null);
     try {
       const response = await fetch(
-        `https://developer.world.org/api/v4/verify/${process.env.VITE_WORLD_RP_ID || "rp_f3e265557bade5a0"}`,
+        `https://developer.world.org/api/v4/verify/${RP_ID}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -63,12 +66,14 @@ export default function WorldIDVerification() {
         throw new Error(errData.detail || "驗證失敗");
       }
       setUser({
-        nullifier_hash: result.nullifier_hash || result.responses?.[0]?.nullifier || "",
+        nullifier_hash:
+          result.nullifier_hash ||
+          result.responses?.[0]?.nullifier ||
+          "",
         verification_level: "orb",
         verified_at: new Date().toISOString(),
       });
       setIsVerified(true);
-      setOpen(false);
       setTimeout(() => navigate("/dashboard"), 2000);
     } catch (err: any) {
       setError(err.message || "驗證失敗，請重試");
@@ -141,24 +146,25 @@ export default function WorldIDVerification() {
             ) : (
               <>
                 <Button
-                  onClick={() => setOpen(true)}
-                  disabled={isSubmitting || !rpContext}
+                  onClick={() => rpContext && setOpen(true)}
+                  disabled={isSubmitting || isInitializing || !rpContext}
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      驗證中...
-                    </>
-                  ) : !rpContext ? (
+                  {isInitializing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       初始化中...
+                    </>
+                  ) : isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      驗證中...
                     </>
                   ) : (
                     "開始認證"
                   )}
                 </Button>
+
                 {rpContext && (
                   <IDKitRequestWidget
                     app_id={APP_ID}
