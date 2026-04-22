@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { IDKitWidget, ISuccessResult, VerificationLevel } from "@worldcoin/idkit";
+import { useState, useEffect } from "react";
+import { IDKitRequestWidget, orbLegacy } from "@worldcoin/idkit";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, CheckCircle, AlertCircle, Shield } from "lucide-react";
@@ -17,49 +17,67 @@ export default function WorldIDVerification() {
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [rpContext, setRpContext] = useState<any>(null);
 
-  const handleVerify = async (result: ISuccessResult) => {
+  useEffect(() => {
+    const fetchRpContext = async () => {
+      try {
+        const response = await fetch("/api/idkit/rp-context", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: ACTION }),
+        });
+        if (!response.ok) throw new Error("Failed to fetch RP context");
+        const data = await response.json();
+        // 後端回傳 { sig, nonce, created_at, expires_at }
+        // 組成 rp_context 格式
+        setRpContext({
+          rp_id: process.env.VITE_WORLD_RP_ID || "rp_f3e265557bade5a0",
+          nonce: data.nonce,
+          created_at: data.created_at,
+          expires_at: data.expires_at,
+          signature: data.sig,
+        });
+      } catch (err: any) {
+        setError("驗證系統初始化失敗：" + err.message);
+      }
+    };
+    fetchRpContext();
+  }, []);
+
+  const handleVerifySuccess = async (result: any) => {
     setIsSubmitting(true);
     setError(null);
     try {
       const response = await fetch(
-        `https://developer.worldcoin.org/api/v2/verify/${APP_ID}`,
+        `https://developer.world.org/api/v4/verify/${process.env.VITE_WORLD_RP_ID || "rp_f3e265557bade5a0"}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nullifier_hash: result.nullifier_hash,
-            merkle_root: result.merkle_root,
-            proof: result.proof,
-            verification_level: result.verification_level,
-            action: ACTION,
-            signal: "",
-          }),
+          body: JSON.stringify(result),
         }
       );
-
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.detail || "後端驗證失敗");
+        throw new Error(errData.detail || "驗證失敗");
       }
-
       setUser({
-        nullifier_hash: result.nullifier_hash,
+        nullifier_hash: result.nullifier_hash || result.responses?.[0]?.nullifier || "",
         verification_level: "orb",
         verified_at: new Date().toISOString(),
       });
-
       setIsVerified(true);
+      setOpen(false);
       setTimeout(() => navigate("/dashboard"), 2000);
     } catch (err: any) {
       setError(err.message || "驗證失敗，請重試");
-      throw err;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleError = (err: any) => {
+  const handleVerifyError = (err: any) => {
     setError(err?.message || "驗證過程發生錯誤，請重試");
   };
 
@@ -121,30 +139,41 @@ export default function WorldIDVerification() {
                 進入應用
               </Button>
             ) : (
-              <IDKitWidget
-                app_id={APP_ID}
-                action={ACTION}
-                verification_level={VerificationLevel.Orb}
-                handleVerify={handleVerify}
-                onError={handleError}
-              >
-                {({ open }) => (
-                  <Button
-                    onClick={open}
-                    disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        驗證中...
-                      </>
-                    ) : (
-                      "開始認證"
-                    )}
-                  </Button>
+              <>
+                <Button
+                  onClick={() => setOpen(true)}
+                  disabled={isSubmitting || !rpContext}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      驗證中...
+                    </>
+                  ) : !rpContext ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      初始化中...
+                    </>
+                  ) : (
+                    "開始認證"
+                  )}
+                </Button>
+                {rpContext && (
+                  <IDKitRequestWidget
+                    app_id={APP_ID}
+                    action={ACTION}
+                    action_description="Verify your identity to access Nexus"
+                    rp_context={rpContext}
+                    onSuccess={handleVerifySuccess}
+                    onError={handleVerifyError}
+                    open={open}
+                    onOpenChange={setOpen}
+                    preset={orbLegacy()}
+                    allow_legacy_proofs={true}
+                  />
                 )}
-              </IDKitWidget>
+              </>
             )}
           </div>
 
