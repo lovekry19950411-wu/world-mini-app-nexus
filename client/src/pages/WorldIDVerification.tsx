@@ -135,7 +135,7 @@ export default function WorldIDVerification() {
                     action_description="Verify your identity to access Nexus"
                     rp_context={rpContext}
                     onSuccess={handleVerifySuccess}
-                    onError={(e) => setError(e?.message || "驗證錯誤")}
+                    onError={(e) => setError(JSON.stringify(e) || "驗證錯誤")}
                     open={open}
                     onOpenChange={setOpen}
                     preset={orbLegacy()}
