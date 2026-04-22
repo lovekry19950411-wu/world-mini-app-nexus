@@ -23,16 +23,14 @@ export default function WorldIDVerification() {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const fetchRpContext = async () => {
-      try {
-        const response = await fetch("/api/idkit/rp-context", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: ACTION }),
-        });
-        if (!response.ok) throw new Error("rp-context API 回應失敗");
-        const data = await response.json();
-        if (!data.nonce || !data.sig) throw new Error("回應格式錯誤");
+    fetch("/api/idkit/rp-context", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: ACTION }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.nonce || !data.sig) throw new Error("格式錯誤");
         setRpContext({
           rp_id: RP_ID,
           nonce: data.nonce,
@@ -40,20 +38,16 @@ export default function WorldIDVerification() {
           expires_at: data.expires_at,
           signature: data.sig,
         });
-      } catch (err: any) {
-        setError("驗證系統初始化失敗：" + err.message);
-      } finally {
-        setIsInitializing(false);
-      }
-    };
-    fetchRpContext();
+      })
+      .catch((err) => setError("初始化失敗：" + err.message))
+      .finally(() => setIsInitializing(false));
   }, []);
 
   const handleVerifySuccess = async (result: any) => {
     setIsSubmitting(true);
     setError(null);
     try {
-      const response = await fetch(
+      const res = await fetch(
         `https://developer.world.org/api/v4/verify/${RP_ID}`,
         {
           method: "POST",
@@ -61,15 +55,12 @@ export default function WorldIDVerification() {
           body: JSON.stringify(result),
         }
       );
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || "驗證失敗");
+      if (!res.ok) {
+        const e = await res.json();
+        throw new Error(e.detail || "驗證失敗");
       }
       setUser({
-        nullifier_hash:
-          result.nullifier_hash ||
-          result.responses?.[0]?.nullifier ||
-          "",
+        nullifier_hash: result.nullifier_hash || result.responses?.[0]?.nullifier || "",
         verification_level: "orb",
         verified_at: new Date().toISOString(),
       });
@@ -82,21 +73,13 @@ export default function WorldIDVerification() {
     }
   };
 
-  const handleVerifyError = (err: any) => {
-    setError(err?.message || "驗證過程發生錯誤，請重試");
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 flex items-center justify-center">
       <div className="w-full max-w-md">
         <Card className="bg-slate-800/50 border-slate-700 p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              {isVerified ? (
-                <CheckCircle className="w-8 h-8 text-white" />
-              ) : (
-                <Shield className="w-8 h-8 text-white" />
-              )}
+              {isVerified ? <CheckCircle className="w-8 h-8 text-white" /> : <Shield className="w-8 h-8 text-white" />}
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">真人驗證</h1>
             <p className="text-slate-400">使用 World ID 4.0 驗證您的身份</p>
@@ -121,26 +104,14 @@ export default function WorldIDVerification() {
           )}
 
           <div className="mb-8 space-y-3 text-sm text-slate-400">
-            <div className="flex gap-3">
-              <span className="text-purple-400 font-bold">✓</span>
-              <span>零 KYC - 消耗個人資訊</span>
-            </div>
-            <div className="flex gap-3">
-              <span className="text-purple-400 font-bold">✓</span>
-              <span>跨應用程式不可連結 - 隱私保護</span>
-            </div>
-            <div className="flex gap-3">
-              <span className="text-purple-400 font-bold">✓</span>
-              <span>防機器人 - 真實用戶驗證</span>
-            </div>
+            <div className="flex gap-3"><span className="text-purple-400 font-bold">✓</span><span>零 KYC - 消耗個人資訊</span></div>
+            <div className="flex gap-3"><span className="text-purple-400 font-bold">✓</span><span>跨應用程式不可連結 - 隱私保護</span></div>
+            <div className="flex gap-3"><span className="text-purple-400 font-bold">✓</span><span>防機器人 - 真實用戶驗證</span></div>
           </div>
 
           <div className="space-y-3">
             {isVerified ? (
-              <Button
-                onClick={() => navigate("/dashboard")}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
-              >
+              <Button onClick={() => navigate("/dashboard")} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold">
                 進入應用
               </Button>
             ) : (
@@ -151,18 +122,10 @@ export default function WorldIDVerification() {
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-12 text-base font-semibold"
                 >
                   {isInitializing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      初始化中...
-                    </>
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />初始化中...</>
                   ) : isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      驗證中...
-                    </>
-                  ) : (
-                    "開始認證"
-                  )}
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />驗證中...</>
+                  ) : "開始認證"}
                 </Button>
 
                 {rpContext && (
@@ -172,7 +135,7 @@ export default function WorldIDVerification() {
                     action_description="Verify your identity to access Nexus"
                     rp_context={rpContext}
                     onSuccess={handleVerifySuccess}
-                    onError={handleVerifyError}
+                    onError={(e) => setError(e?.message || "驗證錯誤")}
                     open={open}
                     onOpenChange={setOpen}
                     preset={orbLegacy()}
@@ -184,8 +147,7 @@ export default function WorldIDVerification() {
           </div>
 
           <p className="text-xs text-slate-500 text-center mt-6">
-            認證過程使用您的虹膜掃描進行身份驗證。
-            <br />
+            認證過程使用您的虹膜掃描進行身份驗證。<br />
             您的資料不會被儲存或與其他應用共享。
           </p>
         </Card>
